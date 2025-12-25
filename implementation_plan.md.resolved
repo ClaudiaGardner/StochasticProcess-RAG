@@ -1,0 +1,137 @@
+# StochasticProcess-RAG 实现计划
+
+基于随机过程教材构建本地知识库，使用 RAG (Retrieval Augmented Generation) 技术实现智能问答系统。
+
+## 项目概述
+
+本项目将 PDF 格式的随机过程教材 ([data/SP-10-12.pdf](file:///d:/Documents/StochasticProcess-RAG/data/SP-10-12.pdf)) 转化为可检索的向量数据库，并通过 LLM 实现智能问答功能。
+
+## User Review Required
+
+> [!IMPORTANT]
+> **API 密钥配置**: 需要用户提供 OpenAI API 兼容接口的密钥和 Base URL，用于初期的 LLM 调用。
+
+> [!NOTE]
+> **模型选择**: 当前计划使用 `BAAI/bge-small-zh-v1.5` 作为 Embedding 模型，首次运行时会自动从 HuggingFace 下载（约 100MB）。
+
+---
+
+## Proposed Changes
+
+### 项目配置文件
+
+#### [NEW] [.gitignore](file:///d:/Documents/StochasticProcess-RAG/.gitignore)
+Git 忽略规则，忽略虚拟环境、数据库文件、缓存和敏感配置：
+- `venv/`, `chroma_db/`, `__pycache__/`, `.env`
+
+#### [NEW] [requirements.txt](file:///d:/Documents/StochasticProcess-RAG/requirements.txt)
+项目依赖清单：
+```
+langchain
+langchain-chroma
+langchain-huggingface
+langchain-openai
+pypdf
+python-dotenv
+chromadb
+```
+
+#### [NEW] [.env.example](file:///d:/Documents/StochasticProcess-RAG/.env.example)
+环境变量模板（用户需复制为 `.env` 并填写实际值）：
+```
+OPENAI_API_KEY=your-api-key-here
+OPENAI_API_BASE=https://api.openai.com/v1
+MODEL_NAME=gpt-3.5-turbo
+```
+
+---
+
+### 核心模块
+
+#### [NEW] [ingest.py](file:///d:/Documents/StochasticProcess-RAG/ingest.py)
+文档摄入与向量化模块：
+
+```python
+# 主要功能：
+# 1. 使用 PyPDFLoader 解析 PDF 文档
+# 2. RecursiveCharacterTextSplitter 切片
+#    - chunk_size=600
+#    - chunk_overlap=100  
+#    - separators: 识别"【例题】"、"§" 等标识符
+# 3. HuggingFaceEmbeddings 向量化 (BAAI/bge-small-zh-v1.5)
+# 4. Chroma 持久化存储到 ./chroma_db
+```
+
+#### [NEW] [main.py](file:///d:/Documents/StochasticProcess-RAG/main.py)
+问答检索主程序：
+
+```python
+# 主要功能：
+# 1. 加载 Chroma 向量数据库
+# 2. 配置 Retriever (k=4)
+# 3. 专用 Prompt 模板 - 强调引用定义
+# 4. RetrievalQA 链构建
+# 5. 交互式问答循环
+```
+
+#### [NEW] [llm_config.py](file:///d:/Documents/StochasticProcess-RAG/llm_config.py)
+LLM 接口抽象层：
+
+```python
+# 主要功能：
+# 1. 统一 LLM 接口封装
+# 2. 支持 ChatOpenAI 兼容接口
+# 3. 预留 Ollama 本地接口切换能力
+# 4. 配置从 .env 文件读取
+```
+
+---
+
+## 技术架构
+
+```mermaid
+flowchart TD
+    A[PDF 文档] --> B[PyPDFLoader]
+    B --> C[RecursiveCharacterTextSplitter]
+    C --> D[文本切片]
+    D --> E[HuggingFaceEmbeddings]
+    E --> F[Chroma 向量数据库]
+    
+    G[用户提问] --> H[Retriever k=4]
+    F --> H
+    H --> I[相关文档片段]
+    I --> J[Prompt 模板]
+    J --> K[LLM]
+    K --> L[回答]
+    
+    style F fill:#e1f5fe
+    style K fill:#fff3e0
+```
+
+---
+
+## Verification Plan
+
+### 自动化测试
+
+1. **向量数据库构建验证**
+   ```bash
+   python ingest.py
+   # 预期：成功创建 ./chroma_db 目录，无报错
+   ```
+
+2. **问答功能测试**
+   ```bash
+   python main.py
+   # 测试问题："什么是马尔可夫链？"
+   # 预期：返回包含定义和相关概念的回答
+   ```
+
+### 手动验证
+
+1. 确认 `chroma_db/` 目录已创建并包含数据
+2. 验证问答回答引用了文档中的定义
+3. 测试核心概念检索：
+   - 样本空间、事件类、概率的定义
+   - 泊松过程的无记忆性
+   - 常返态、瞬时态的定义

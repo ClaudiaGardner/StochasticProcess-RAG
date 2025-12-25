@@ -1,0 +1,30 @@
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# Vector Database
+chroma_db/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment Variables
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

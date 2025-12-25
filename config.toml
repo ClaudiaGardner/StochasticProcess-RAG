@@ -1,0 +1,40 @@
+# StochasticProcess-RAG 配置文件
+
+[api]
+# API 提供商配置
+provider = "rinko-gemini"
+base_url = "https://rinkoai.com/v1"
+api_key = "sk-xZGSVnh2kut6HQmsOF69hkp8U19QuiYHprnxYc8VEcuXBO6Z"
+
+[model]
+# 模型配置
+chat_model = "gemini-3-pro-preview"
+embedding_model = "text-embedding-3-small"
+temperature = 0.3
+
+[database]
+# 向量数据库配置
+chroma_dir = "./chroma_db"
+solutions_dir = "./solutions"
+
+[ingestion]
+# 文档处理配置
+pdf_path = "data/SP-10-12.pdf"
+chunk_size = 800
+chunk_overlap = 150
+max_problems_to_solve = 0  # 0 表示解答所有题目，否则只解答前 N 个
+
+[retrieval]
+# 检索配置
+top_k = 5  # 每次检索返回的文档数量
+
+[topics]
+# 需要生成补充知识的核心主题
+core_topics = [
+    "马尔可夫链的定义和转移概率矩阵",
+    "泊松过程及其无记忆性",
+    "常返态与瞬时态的定义和判定",
+    "随机过程的样本空间、事件类和概率测度",
+    "更新过程与到达过程",
+    "随机游走及其性质",
+]
