@@ -2,8 +2,8 @@
 
 [api]
 # API 提供商配置
-provider = "rinko-gemini"
-base_url = "https://rinkoai.com/v1"
+provider = ""
+base_url = ""
 api_key = ""
 
 [model]

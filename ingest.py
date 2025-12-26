@@ -620,8 +620,32 @@ def main():
         exercises = [p for p in problems if p['type'] == 'exercise']
         print(f"\n📋 题目统计: {len(examples)} 个例题, {len(exercises)} 个习题")
         
-        # 生成题目索引文档
+        # 读取现有题目索引文件中的手动补充内容
         index_file = f"{SOLUTIONS_DIR}/题目索引.md"
+        existing_problems = {}
+        if os.path.exists(index_file):
+            print(f"\n📖 读取现有题目索引，保留手动补充内容...")
+            with open(index_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            # 解析现有题目内容
+            import re as re_existing
+            for match in re_existing.finditer(r'### (例题|习题)(\d+\.\d+)\n\n(.+?)(?=\n---|\Z)', content, re_existing.DOTALL):
+                prob_type = match.group(1)
+                prob_id = f"{prob_type}{match.group(2)}"
+                prob_content = match.group(3).strip()
+                # 只保留非"PDF解析不完整"的内容
+                if 'PDF解析不完整' not in prob_content and '请参考原文' not in prob_content:
+                    existing_problems[prob_id] = prob_content
+            print(f"   ✅ 发现 {len(existing_problems)} 个手动补充的题目")
+        
+        # 合并：优先使用手动补充的内容
+        for p in problems:
+            if p['id'] in existing_problems:
+                # 如果手动补充了完整内容，使用手动版本
+                if len(existing_problems[p['id']]) > len(p['content']) or 'PDF解析不完整' in p['content']:
+                    p['content'] = existing_problems[p['id']]
+        
+        # 生成题目索引文档
         print(f"\n📝 正在生成题目索引文档: {index_file}")
         with open(index_file, 'w', encoding='utf-8') as f:
             f.write("# 随机过程 - 题目索引\n\n")

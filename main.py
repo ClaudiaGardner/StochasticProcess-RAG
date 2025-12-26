@@ -6,8 +6,6 @@
 import os
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
 from config_manager import (
     get_api_config, get_model_config, get_database_config, get_retrieval_config
 )
@@ -19,8 +17,12 @@ def get_embeddings():
     embedding_model = model_config.get("embedding_model", "local")
     
     if embedding_model == "local":
-        # 使用本地 HuggingFace 模型
+        # 设置 HuggingFace 镜像
+        import os as _os
+        _os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+        
         from langchain_huggingface import HuggingFaceEmbeddings
+        print("  📦 使用本地 HuggingFace Embedding 模型...")
         return HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
             model_kwargs={'device': 'cpu'},
@@ -36,13 +38,18 @@ def get_embeddings():
         )
 
 
-def get_llm(temperature=0.3):
-    """获取 LLM 实例"""
+def get_llm(model_name=None, temperature=0.3):
+    """获取 LLM 实例，支持指定模型名称"""
     api_config = get_api_config()
     model_config = get_model_config()
     
+    # 如果指定了模型名称就使用，否则使用配置中的第一个模型
+    if model_name is None:
+        chat_models = model_config.get("chat_models", ["gemini-3-pro-preview"])
+        model_name = chat_models[0] if isinstance(chat_models, list) else chat_models
+    
     return ChatOpenAI(
-        model=model_config.get("chat_model", "gemini-3-pro-preview"),
+        model=model_name,
         temperature=temperature,
         openai_api_key=api_config["api_key"],
         openai_api_base=api_config["base_url"],
@@ -74,11 +81,31 @@ def load_vectorstore():
 
 
 def create_qa_chain(vectorstore, llm):
-    """创建 QA 检索链"""
+    """创建简单的 QA 检索函数"""
     retrieval_config = get_retrieval_config()
     top_k = retrieval_config.get("top_k", 5)
     
-    template = """你是一位概率论与随机过程领域的专家教授。请基于以下背景知识回答学生的问题。
+    retriever = vectorstore.as_retriever(
+        search_type="similarity",
+        search_kwargs={"k": top_k}
+    )
+    
+    class SimpleQAChain:
+        def __init__(self, retriever, llm):
+            self.retriever = retriever
+            self.llm = llm
+        
+        def invoke(self, inputs):
+            question = inputs.get("input", "")
+            
+            # 检索相关文档
+            docs = self.retriever.invoke(question)
+            
+            # 构建上下文
+            context = "\n\n---\n\n".join([doc.page_content for doc in docs])
+            
+            # 构建提示
+            prompt = f"""你是一位概率论与随机过程领域的专家教授。请基于以下背景知识回答学生的问题。
 
 **背景知识**:
 {context}
@@ -98,26 +125,17 @@ def create_qa_chain(vectorstore, llm):
 **学生问题**: {question}
 
 **教授回答**:"""
-
-    PROMPT = PromptTemplate(
-        template=template,
-        input_variables=["context", "question"]
-    )
+            
+            # 调用 LLM
+            response = self.llm.invoke(prompt)
+            
+            return {
+                "input": question,
+                "context": docs,
+                "answer": response.content
+            }
     
-    retriever = vectorstore.as_retriever(
-        search_type="similarity",
-        search_kwargs={"k": top_k}
-    )
-    
-    qa_chain = RetrievalQA.from_chain_type(
-        llm=llm,
-        chain_type="stuff",
-        retriever=retriever,
-        return_source_documents=True,
-        chain_type_kwargs={"prompt": PROMPT}
-    )
-    
-    return qa_chain
+    return SimpleQAChain(retriever, llm)
 
 
 def main():
@@ -157,17 +175,17 @@ def main():
             
             try:
                 print("\n🔍 正在检索相关知识...")
-                result = qa_chain.invoke({"query": question})
+                result = qa_chain.invoke({"input": question})
                 
                 print("\n" + "="*60)
                 print("🤖 回答:")
                 print("-"*60)
-                print(result['result'])
+                print(result['answer'])
                 print("="*60)
                 
-                if result.get('source_documents'):
-                    print(f"\n📚 参考来源 ({len(result['source_documents'])} 个):")
-                    for i, doc in enumerate(result['source_documents'][:3], 1):
+                if result.get('context'):
+                    print(f"\n📚 参考来源 ({len(result['context'])} 个):")
+                    for i, doc in enumerate(result['context'][:3], 1):
                         doc_type = doc.metadata.get('type', 'original')
                         type_label = {
                             'original': '📄 原文',
