@@ -7,9 +7,9 @@ base_url = "https://rinkoai.com/v1"
 api_key = "sk-xZGSVnh2kut6HQmsOF69hkp8U19QuiYHprnxYc8VEcuXBO6Z"
 
 [model]
-# 模型配置
-chat_model = "gemini-3-pro-preview"
-embedding_model = "text-embedding-3-small"
+# 模型配置 - 按优先级尝试，第一个失败就用下一个
+chat_models = ["gemini-3-pro-preview", "gemini-3-pro-high", "gemini-3-pro-low"]
+embedding_model = "local"  # 使用本地 HuggingFace embedding 模型
 temperature = 0.3
 
 [database]

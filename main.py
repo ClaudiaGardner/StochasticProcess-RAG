@@ -14,15 +14,26 @@ from config_manager import (
 
 
 def get_embeddings():
-    """获取 Embedding 模型"""
-    api_config = get_api_config()
+    """获取 Embedding 模型（支持本地 HuggingFace 或 API）"""
     model_config = get_model_config()
+    embedding_model = model_config.get("embedding_model", "local")
     
-    return OpenAIEmbeddings(
-        model=model_config.get("embedding_model", "text-embedding-3-small"),
-        openai_api_key=api_config["api_key"],
-        openai_api_base=api_config["base_url"],
-    )
+    if embedding_model == "local":
+        # 使用本地 HuggingFace 模型
+        from langchain_huggingface import HuggingFaceEmbeddings
+        return HuggingFaceEmbeddings(
+            model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
+        )
+    else:
+        # 使用 OpenAI 兼容接口
+        api_config = get_api_config()
+        return OpenAIEmbeddings(
+            model=embedding_model,
+            openai_api_key=api_config["api_key"],
+            openai_api_base=api_config["base_url"],
+        )
 
 
 def get_llm(temperature=0.3):
