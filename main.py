@@ -4,6 +4,7 @@
 """
 
 import os
+from datetime import datetime
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 from config_manager import (
@@ -129,13 +130,92 @@ def create_qa_chain(vectorstore, llm):
             # 调用 LLM
             response = self.llm.invoke(prompt)
             
+            # 处理不同类型的响应对象
+            if isinstance(response, str):
+                answer = response
+            else:
+                answer = response.content
+            
             return {
                 "input": question,
                 "context": docs,
-                "answer": response.content
+                "answer": answer
             }
     
     return SimpleQAChain(retriever, llm)
+
+
+def save_answer_as_markdown(question, answer, context_docs, output_dir="./answers"):
+    """将回答保存为格式化的Markdown文档"""
+    # 创建输出目录
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # 生成文件名（使用时间戳避免重复）
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_question = "".join(c for c in question[:30] if c.isalnum() or c in (' ', '-', '_')).rstrip()
+    safe_question = safe_question.replace(' ', '_')
+    filename = f"{timestamp}_{safe_question}.md"
+    filepath = os.path.join(output_dir, filename)
+    
+    # 构建Markdown内容
+    markdown_content = f"""# 随机过程 RAG 问答系统 - 回答记录
+
+**提问时间**: {datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")}
+**问题**: {question}
+
+## 🤖 AI 回答
+
+{answer}
+
+---
+
+## 📚 参考来源 ({len(context_docs)} 个)
+
+"""
+    
+    # 添加参考来源
+    for i, doc in enumerate(context_docs[:5], 1):  # 最多显示5个来源
+        doc_type = doc.metadata.get('type', 'original')
+        type_label = {
+            'original': '📄 原文',
+            'solved_problem': '✅ 已解答例题',
+            'supplementary_knowledge': '📖 补充知识'
+        }.get(doc_type, '📄')
+        
+        extra_info = ""
+        if 'problem_id' in doc.metadata:
+            extra_info = f" - 例题 {doc.metadata['problem_id']}"
+        elif 'topic' in doc.metadata:
+            extra_info = f" - {doc.metadata['topic']}"
+        
+        markdown_content += f"""
+### [{i}] {type_label}{extra_info}
+
+```
+{doc.page_content[:500]}{"..." if len(doc.page_content) > 500 else ""}
+```
+
+---
+"""
+    
+    markdown_content += f"""
+
+## 📄 系统信息
+
+- **向量数据库**: Chroma
+- **嵌入模型**: 本地 HuggingFace
+- **LLM**: {get_model_config().get('chat_models', ['默认'])[0]}
+- **检索文档数**: {len(context_docs)}
+
+---
+*由随机过程 RAG 问答系统生成*
+"""
+    
+    # 保存文件
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(markdown_content)
+    
+    return filepath
 
 
 def main():
@@ -182,6 +262,18 @@ def main():
                 print("-"*60)
                 print(result['answer'])
                 print("="*60)
+                
+                # 自动保存回答为Markdown文件
+                try:
+                    filepath = save_answer_as_markdown(
+                        question=result['input'],
+                        answer=result['answer'],
+                        context_docs=result['context']
+                    )
+                    print(f"💾 回答已自动保存到: {filepath}")
+                    print("� 可以使用 Markdown 查看器打开文件，数学公式将正确显示")
+                except Exception as e:
+                    print(f"❌ 保存失败: {str(e)}")
                 
                 if result.get('context'):
                     print(f"\n📚 参考来源 ({len(result['context'])} 个):")

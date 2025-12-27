@@ -4,7 +4,7 @@
 # API 提供商配置
 provider = "rinko-gemini"
 base_url = "https://rinkoai.com/v1"
-api_key = ""
+api_key = "sk-BPjHQwxo6OZD2jQoM9yruFmc1kXuQixwMyLEZSELai9j5mfZ"
 
 [model]
 # 模型配置 - 按优先级尝试，第一个失败就用下一个

@@ -457,9 +457,14 @@ $$P_{{ij}} = P(X_{{n+1}}=j | X_n=i)$$
         for attempt in range(max_retries):
             try:
                 response = llm.invoke(prompt)
+                # 处理不同类型的响应对象
+                if isinstance(response, str):
+                    content = response
+                else:
+                    content = response.content
                 if model_idx > 0:
                     print(f"    ✅ 使用备选模型 {model_name} 成功")
-                return response.content
+                return content
             except Exception as e:
                 error_msg = str(e)
                 if attempt < max_retries - 1:
@@ -530,7 +535,12 @@ $$P(A|B) = \\frac{{P(A \\cap B)}}{{P(B)}}$$
         for attempt in range(max_retries):
             try:
                 response = llm.invoke(prompt)
-                return response.content
+                # 处理不同类型的响应对象
+                if isinstance(response, str):
+                    content = response
+                else:
+                    content = response.content
+                return content
             except Exception as e:
                 error_msg = str(e)
                 if attempt < max_retries - 1:
@@ -883,10 +893,26 @@ def main():
             print(f"\n📚 正在生成 {len(core_topics)} 个主题的补充知识...")
             for i, topic in enumerate(core_topics, 1):
                 print(f"  [{i}/{len(core_topics)}] {topic}...")
+                
+                # 检查是否已有补充知识文件
+                filename = f"{SOLUTIONS_DIR}/知识点_{i}_{topic[:10]}.md"
+                if os.path.exists(filename):
+                    print(f"    📖 已有补充知识文件，跳过生成")
+                    # 仍然添加到向量库
+                    try:
+                        with open(filename, 'r', encoding='utf-8') as f:
+                            existing_knowledge = f.read()
+                        solved_docs.append(Document(
+                            page_content=f"{topic}\n\n{existing_knowledge}",
+                            metadata={'type': 'supplementary_knowledge', 'topic': topic}
+                        ))
+                    except Exception as e:
+                        print(f"    ⚠️ 读取现有文件失败: {str(e)}")
+                    continue
+                
                 knowledge = generate_supplementary_knowledge(llm, topic)
                 if knowledge:
                     # 保存到文件
-                    filename = f"{SOLUTIONS_DIR}/知识点_{i}_{topic[:10]}.md"
                     with open(filename, 'w', encoding='utf-8') as f:
                         f.write(f"# {topic}\n\n{knowledge}\n")
                     

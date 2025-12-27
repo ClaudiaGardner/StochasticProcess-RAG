@@ -1,0 +1,273 @@
+{
+  "main": {
+    "id": "ae0981d5245fac07",
+    "type": "split",
+    "children": [
+      {
+        "id": "cec613135e9f0dfa",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c2d5c13fb95f8113",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "solutions/习题2_4.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "习题2_4"
+            }
+          },
+          {
+            "id": "de9b59721e5d88b2",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为"
+            }
+          }
+        ],
+        "currentTab": 1
+      },
+      {
+        "id": "fc9f48652c86f756",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "af3bf3a79ba41e8f",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "solutions/第3章_题目与解答.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "第3章_题目与解答"
+            }
+          },
+          {
+            "id": "05f77b639da2be23",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "data/回忆版题目.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "回忆版题目"
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "130570d26ba17f1e",
+    "type": "split",
+    "children": [
+      {
+        "id": "36036e6b464c559b",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "24b1fb053e994769",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "334a04cf02b8bce5",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "转移概率矩阵",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "4b1f3ea57f72f906",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "c76da8eb3b4258b7",
+    "type": "split",
+    "children": [
+      {
+        "id": "cb59e53a1d5b03c8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eb68409c42528475",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for 20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为"
+            }
+          },
+          {
+            "id": "7151a7d37fb11ea5",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from 20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为"
+            }
+          },
+          {
+            "id": "b97439b47d75f22c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "ac379446e2c9b110",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "af06b0cb7483f9f7",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of 20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "de9b59721e5d88b2",
+  "lastOpenFiles": [
+    "answers/20251227_225225_指数分布是什么.md",
+    "data/回忆版题目.pdf",
+    "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+    "solutions/第3章_题目与解答.md",
+    "solutions/习题2_4.md",
+    "solutions/例题2_4.md",
+    "solutions/习题3_13.md",
+    "solutions/习题3_12.md",
+    "solutions/习题3_5.md",
+    "solutions/习题3_4.md",
+    "solutions/习题3_2.md",
+    "solutions/习题3_1.md",
+    "solutions/题目索引.md",
+    "solutions/例题3_12.md",
+    "answers/20251227_202503_设有一个离散时间马尔可夫链其状态空间为_S__0_1.md",
+    "solutions/第0章_题目与解答.md",
+    "solutions/例题0_36.md",
+    "answers/20251227_202138_集优惠券问题有_n_类不同的优惠券买_1_件商品可以随机.md",
+    "answers",
+    "solutions/例题0_33.md",
+    "chroma_db/chroma.sqlite3-journal",
+    "solutions/习题4_0.md",
+    "solutions/习题0_1.md",
+    "solutions/例题1_7.md",
+    "solutions/例题1_1.md",
+    "solutions/例题0_4.md",
+    "solutions/例题0_3.md",
+    "solutions/例题0_2.md",
+    "solutions/例题0_1.md",
+    "data/SP-10-12.pdf",
+    "data/习题答案.pdf",
+    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/link_lists.bin",
+    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/length.bin",
+    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/data_level0.bin",
+    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/header.bin",
+    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c"
+  ]
+}
