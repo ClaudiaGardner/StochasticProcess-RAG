@@ -11,14 +11,10 @@
             "id": "c2d5c13fb95f8113",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "solutions/习题2_4.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "习题2_4"
+              "title": "New tab"
             }
           }
         ]
@@ -85,7 +81,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "转移概率矩阵",
+                "query": "",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -215,17 +211,31 @@
       "bases:Create new base": false
     }
   },
-  "active": "c2d5c13fb95f8113",
+  "active": "24b1fb053e994769",
   "lastOpenFiles": [
+    "data/回忆版题目.pdf",
+    "answers/search_20251229_123526_一个坛子里装有_M_个球每个球要么是红色要么是黑色在每.md",
+    "chroma_db/b9056a37-ee08-4712-a1c6-6235b6603c4e/link_lists.bin",
+    "chroma_db/b9056a37-ee08-4712-a1c6-6235b6603c4e/length.bin",
+    "chroma_db/b9056a37-ee08-4712-a1c6-6235b6603c4e/data_level0.bin",
+    "chroma_db/b9056a37-ee08-4712-a1c6-6235b6603c4e/header.bin",
     "chroma_db/chroma.sqlite3-journal",
+    "chroma_db/b9056a37-ee08-4712-a1c6-6235b6603c4e",
+    "chroma_db/chroma.sqlite3",
+    "chroma_db",
+    "chroma_db.zip",
+    "answers/search_20251229_122928_一个坛子里装有_M_个球每个球要么是红色要么是黑色在每.md",
+    "solutions/习题2_4.md",
+    "solutions/例题2_8.md",
+    "solutions/例题2_4.md",
+    "data/SP-10-12.pdf",
+    "answers/search_20251229_122548_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+    "answers/20251229_122358_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
     "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
     "answers/20251229_115640_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
     "answers/20251229_114601_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
     "answers/20251227_225225_指数分布是什么.md",
-    "data/回忆版题目.pdf",
     "solutions/第3章_题目与解答.md",
-    "solutions/习题2_4.md",
-    "solutions/例题2_4.md",
     "solutions/习题3_13.md",
     "solutions/习题3_12.md",
     "solutions/习题3_5.md",
@@ -238,19 +248,6 @@
     "solutions/第0章_题目与解答.md",
     "solutions/例题0_36.md",
     "answers/20251227_202138_集优惠券问题有_n_类不同的优惠券买_1_件商品可以随机.md",
-    "answers",
-    "solutions/例题0_33.md",
-    "solutions/习题4_0.md",
-    "solutions/习题0_1.md",
-    "solutions/例题1_7.md",
-    "solutions/例题1_1.md",
-    "solutions/例题0_4.md",
-    "data/SP-10-12.pdf",
-    "data/习题答案.pdf",
-    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/link_lists.bin",
-    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/length.bin",
-    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/data_level0.bin",
-    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/header.bin",
-    "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c"
+    "solutions/例题0_33.md"
   ]
 }

@@ -369,20 +369,50 @@ def main():
                             'supplementary_knowledge': '📖 补充知识'
                         }.get(doc_type, '📄')
                         
+                        # 获取来源信息
                         extra_info = ""
+                        source_info = ""
+                        
+                        # 页码信息
+                        if 'page' in doc.metadata:
+                            source_info += f"第 {doc.metadata['page'] + 1} 页"
+                        
+                        # 来源文件
+                        if 'source_file' in doc.metadata:
+                            if source_info:
+                                source_info += f" | {doc.metadata['source_file']}"
+                            else:
+                                source_info = doc.metadata['source_file']
+                        elif 'source' in doc.metadata:
+                            # PyPDFLoader 默认的 source 字段
+                            import os
+                            source_name = os.path.basename(doc.metadata['source'])
+                            if source_info:
+                                source_info += f" | {source_name}"
+                            else:
+                                source_info = source_name
+                        
+                        # 题目ID
                         if 'problem_id' in doc.metadata:
                             extra_info = f" - {doc.metadata['problem_id']}"
                         elif 'topic' in doc.metadata:
                             extra_info = f" - {doc.metadata['topic']}"
                         
+                        # 构建标题
+                        header = f"[{i}] {type_label}{extra_info}"
+                        if source_info:
+                            header += f"\n    📍 来源: {source_info}"
+                        
                         print(f"\n{'='*60}")
-                        print(f"[{i}] {type_label}{extra_info}")
+                        print(header)
                         print("-"*60)
                         # 显示完整内容
                         print(doc.page_content)
                         
-                        # 累积到结果文本
+                        # 累积到结果文本（Markdown 格式）
                         result_text += f"\n## [{i}] {type_label}{extra_info}\n\n"
+                        if source_info:
+                            result_text += f"**📍 来源**: {source_info}\n\n"
                         result_text += doc.page_content + "\n\n---\n"
                     
                     print("\n" + "="*60)
