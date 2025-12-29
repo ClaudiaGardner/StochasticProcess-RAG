@@ -9,10 +9,12 @@ English | [简体中文](README_CN.md)
 ## ✨ 核心特性
 
 - 🔍 **智能检索**：基于 Chroma 向量数据库，快速定位相关知识点
-- 🤖 **AI 解答**：支持多种大语言模型（Claude、GPT 等），提供详细的解题步骤
-- 📖 **知识库构建**：自动解析 PDF 教材，提取例题和习题
+- 🤖 **AI 解答**：支持多种大语言模型（Claude、GPT、Ollama 本地模型等）
+- 📖 **多文档支持**：自动解析 `data/` 目录下所有 PDF（教材、习题、试卷、讲义等）
 - 📐 **LaTeX 公式支持**：完美渲染数学公式，支持 Markdown 输出
 - 💾 **答案归档**：自动保存问答记录，方便复习回顾
+- 🏠 **完全离线**：支持本地 Ollama 模型，无需联网即可使用
+- 🔎 **纯检索模式**：考试推荐！直接返回教材原文，不依赖 AI 生成
 - 🔄 **OCR 支持**：可选的数学公式 OCR 识别（Pix2Text）
 
 ## 🚀 快速开始
@@ -74,12 +76,17 @@ chat_models = ["claude-sonnet-4-5-20250929"]  # 你的模型列表
 embedding_model = "local"  # 使用本地 embedding 模型
 temperature = 0.3
 
+# 离线模式配置（可选）
+offline_mode = false  # 设为 true 启用离线模式
+local_llm_url = "http://localhost:11434"  # Ollama 服务地址
+local_llm_model = "qwen3:4b"  # 本地模型
+
 [database]
 chroma_dir = "./chroma_db"
 solutions_dir = "./solutions"
 
 [ingestion]
-pdf_path = "data/SP-10-12.pdf"  # 你的教材 PDF 路径
+data_dir = "data"  # PDF 目录（会解析目录下所有 PDF 文件）
 chunk_size = 800
 chunk_overlap = 150
 max_problems_to_solve = 0  # 0 表示解答所有题目
@@ -111,7 +118,14 @@ python ingest.py --ocr
 7. **开始问答**
 
 ```bash
+# 标准模式（使用在线 API）
 python main.py
+
+# 离线模式（使用本地 Ollama 模型）
+python main.py --offline
+
+# 纯检索模式（推荐考试使用，只返回教材原文，不需要 LLM）
+python main.py --search
 ```
 
 ## 📖 使用示例
@@ -148,18 +162,16 @@ python main.py
 ```
 StochasticProcess-RAG/
 ├── main.py                 # 主程序 - 交互式问答
-├── ingest.py              # 数据摄入 - PDF 解析与向量化
-├── config_manager.py      # 配置管理
-├── llm_config.py          # LLM 配置辅助
-├── config.toml            # 配置文件（不上传到 Git）
-├── config-template.toml   # 配置模板
-├── requirements.txt       # Python 依赖
-├── .gitignore            # Git 忽略规则
-├── .env.example          # 环境变量示例
-├── data/                 # 教材 PDF 存放目录
-├── chroma_db/            # 向量数据库（自动生成）
-├── solutions/            # AI 生成的题目解答
-└── answers/              # 问答记录归档
+├── ingest.py               # 数据摄入 - PDF 解析与向量化
+├── config_manager.py       # 配置管理
+├── config.toml             # 配置文件（不上传到 Git）
+├── config-template.toml    # 配置模板
+├── requirements.txt        # Python 依赖
+├── data/                   # PDF 资料目录
+│   ├── *.pdf               # 教材、习题、试卷、讲义等
+├── chroma_db/              # 向量数据库（自动生成）
+├── solutions/              # AI 生成的题目解答
+└── answers/                # 问答记录归档
 ```
 
 ## 🛠️ 技术栈

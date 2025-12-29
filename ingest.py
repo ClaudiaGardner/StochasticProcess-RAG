@@ -594,19 +594,35 @@ $$P(A|B) = \\frac{{P(A \\cap B)}}{{P(B)}}$$
                         return None
 
 
-def create_vectorstore(documents, persist_directory, offline=None):
-    """创建向量存储"""
+def create_vectorstore(documents, persist_directory, offline=None, append=False):
+    """创建或追加向量存储
+    
+    Args:
+        append: 是否追加到现有数据库（而不是新建）
+    """
     print(f"🧠 正在初始化 Embedding 模型...")
     embeddings = get_embeddings(offline=offline)
     
-    print(f"💾 正在创建向量数据库并持久化到: {persist_directory}")
-    vectorstore = Chroma.from_documents(
-        documents=documents,
-        embedding=embeddings,
-        persist_directory=persist_directory
-    )
+    if append and os.path.exists(persist_directory):
+        # 追加模式：加载现有数据库并添加新文档
+        print(f"📝 正在加载现有数据库并追加新文档...")
+        vectorstore = Chroma(
+            persist_directory=persist_directory,
+            embedding_function=embeddings
+        )
+        # 添加新文档
+        vectorstore.add_documents(documents)
+        print(f"✅ 成功追加 {len(documents)} 个文档到向量数据库！")
+    else:
+        # 新建模式
+        print(f"💾 正在创建向量数据库并持久化到: {persist_directory}")
+        vectorstore = Chroma.from_documents(
+            documents=documents,
+            embedding=embeddings,
+            persist_directory=persist_directory
+        )
+        print(f"✅ 向量数据库创建成功！")
     
-    print(f"✅ 向量数据库创建成功！")
     return vectorstore
 
 
@@ -634,39 +650,92 @@ def main():
         print("🏠 配置文件设置为离线模式")
     
     PDF_PATH = ing_config.get("pdf_path", "data/SP-10-12.pdf")
+    DATA_DIR = ing_config.get("data_dir", "data")  # 数据目录
     CHROMA_DIR = db_config.get("chroma_dir", "./chroma_db")
     SOLUTIONS_DIR = db_config.get("solutions_dir", "./solutions")
     CHUNK_SIZE = ing_config.get("chunk_size", 800)
     CHUNK_OVERLAP = ing_config.get("chunk_overlap", 150)
     MAX_PROBLEMS = ing_config.get("max_problems_to_solve", 10)
     
-    # 检查 PDF 是否存在
-    if not os.path.exists(PDF_PATH):
-        print(f"❌ 错误: 未找到 PDF 文件 {PDF_PATH}")
+    # 获取所有 PDF 文件
+    pdf_files = []
+    if os.path.isdir(DATA_DIR):
+        for f in os.listdir(DATA_DIR):
+            if f.lower().endswith('.pdf'):
+                pdf_files.append(os.path.join(DATA_DIR, f))
+        print(f"📚 在 {DATA_DIR}/ 目录下找到 {len(pdf_files)} 个 PDF 文件:")
+        for pdf in pdf_files:
+            print(f"   - {os.path.basename(pdf)}")
+    else:
+        # 兼容旧配置：单个 PDF 文件
+        if os.path.exists(PDF_PATH):
+            pdf_files = [PDF_PATH]
+        else:
+            print(f"❌ 错误: 未找到 PDF 文件或目录")
+            return
+    
+    if not pdf_files:
+        print(f"❌ 错误: 未找到任何 PDF 文件")
         return
     
-    # 如果向量数据库已存在，询问是否重建
+    # 如果向量数据库已存在，询问是重建还是追加
+    APPEND_MODE = False
     if os.path.exists(CHROMA_DIR):
-        response = input(f"⚠️  向量数据库 {CHROMA_DIR} 已存在，是否重建？(y/n): ")
-        if response.lower() != 'y':
+        print(f"\n⚠️  向量数据库 {CHROMA_DIR} 已存在")
+        print("   [r] 重建 - 删除旧数据库，重新处理所有文档")
+        print("   [a] 追加 - 保留现有数据，只添加新的 PDF 内容")
+        print("   [n] 取消")
+        response = input("请选择操作 (r/a/n): ").strip().lower()
+        
+        if response == 'r':
+            print("🗑️  删除旧数据库...")
+            import shutil
+            shutil.rmtree(CHROMA_DIR)
+        elif response == 'a':
+            APPEND_MODE = True
+            print("📝 追加模式：将在现有数据库上添加新内容")
+        else:
             print("❌ 取消操作")
             return
-        print("🗑️  删除旧数据库...")
-        import shutil
-        shutil.rmtree(CHROMA_DIR)
     
     # 创建目录
     Path(SOLUTIONS_DIR).mkdir(exist_ok=True)
     
     try:
-        # 步骤 1: 加载和切分文档（使用 OCR 或 PyMuPDF）
-        splits, raw_documents = load_and_split_pdf(PDF_PATH, CHUNK_SIZE, CHUNK_OVERLAP, use_ocr=USE_OCR)
+        # 步骤 1: 加载和切分所有 PDF 文档
+        all_splits = []
+        all_raw_documents = []
+        
+        for pdf_path in pdf_files:
+            print(f"\n📄 正在处理: {os.path.basename(pdf_path)}")
+            try:
+                splits, raw_documents = load_and_split_pdf(pdf_path, CHUNK_SIZE, CHUNK_OVERLAP, use_ocr=USE_OCR)
+                
+                # 为每个文档添加来源标记
+                for doc in splits:
+                    doc.metadata['source_file'] = os.path.basename(pdf_path)
+                for doc in raw_documents:
+                    doc.metadata['source_file'] = os.path.basename(pdf_path)
+                
+                all_splits.extend(splits)
+                all_raw_documents.extend(raw_documents)
+                print(f"   ✅ 加载了 {len(splits)} 个文档片段")
+            except Exception as e:
+                print(f"   ❌ 处理失败: {str(e)[:80]}")
+                continue
+        
+        print(f"\n📊 总计加载 {len(all_splits)} 个文档片段（来自 {len(pdf_files)} 个 PDF）")
+        
+        # 使用合并后的文档
+        splits = all_splits
+        raw_documents = all_raw_documents
         
         # 打印示例片段
-        print("\n📄 示例文档片段:")
-        print("-" * 60)
-        print(splits[0].page_content[:300])
-        print("-" * 60)
+        if splits:
+            print("\n📄 示例文档片段:")
+            print("-" * 60)
+            print(splits[0].page_content[:300])
+            print("-" * 60)
         
         # 步骤 2: 提取例题和习题
         print("\n🔍 正在提取例题和习题...")
@@ -998,7 +1067,7 @@ def main():
         all_documents = splits + solved_docs
         print(f"✅ 共 {len(all_documents)} 个文档片段 (原文: {len(splits)}, 解答+知识: {len(solved_docs)})")
         
-        vectorstore = create_vectorstore(all_documents, CHROMA_DIR, offline=OFFLINE_MODE)
+        vectorstore = create_vectorstore(all_documents, CHROMA_DIR, offline=OFFLINE_MODE, append=APPEND_MODE)
         
         # 测试检索
         print("\n🔍 测试检索功能...")
