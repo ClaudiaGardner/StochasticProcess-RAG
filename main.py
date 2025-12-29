@@ -12,21 +12,37 @@ from config_manager import (
 )
 
 
-def get_embeddings():
+def get_embeddings(offline=None):
     """获取 Embedding 模型（支持本地 HuggingFace 或 API）"""
     model_config = get_model_config()
     embedding_model = model_config.get("embedding_model", "local")
     
+    # 检查离线模式
+    if offline is None:
+        offline = model_config.get("offline_mode", False)
+    
     if embedding_model == "local":
-        # 设置 HuggingFace 镜像
         import os as _os
-        _os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+        
+        # 离线模式：完全使用本地缓存，不联网
+        if offline:
+            _os.environ['HF_HUB_OFFLINE'] = '1'
+            _os.environ['TRANSFORMERS_OFFLINE'] = '1'
+            print("  🏠 离线模式：使用本地缓存的 Embedding 模型")
+        else:
+            # 设置 HuggingFace 镜像（在线模式）
+            _os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
         
         from langchain_huggingface import HuggingFaceEmbeddings
-        print("  📦 使用本地 HuggingFace Embedding 模型...")
+        
+        # 自动检测 GPU
+        import torch
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        print(f"  📦 使用本地 HuggingFace Embedding 模型 (设备: {device})...")
+        
         return HuggingFaceEmbeddings(
             model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-            model_kwargs={'device': 'cpu'},
+            model_kwargs={'device': device},
             encode_kwargs={'normalize_embeddings': True}
         )
     else:
@@ -39,28 +55,53 @@ def get_embeddings():
         )
 
 
-def get_llm(model_name=None, temperature=0.3):
-    """获取 LLM 实例，支持指定模型名称"""
-    api_config = get_api_config()
+def get_llm(model_name=None, temperature=0.3, offline=None):
+    """获取 LLM 实例，支持在线 API 和离线本地模型（Ollama）"""
     model_config = get_model_config()
     
-    # 如果指定了模型名称就使用，否则使用配置中的第一个模型
-    if model_name is None:
-        chat_models = model_config.get("chat_models", ["gemini-3-pro-preview"])
-        model_name = chat_models[0] if isinstance(chat_models, list) else chat_models
+    # 如果未指定，从配置读取离线模式
+    if offline is None:
+        offline = model_config.get("offline_mode", False)
     
-    return ChatOpenAI(
-        model=model_name,
-        temperature=temperature,
-        openai_api_key=api_config["api_key"],
-        openai_api_base=api_config["base_url"],
-    )
+    if offline:
+        # 离线模式：使用 Ollama 本地模型
+        local_url = model_config.get("local_llm_url", "http://localhost:11434")
+        local_model = model_config.get("local_llm_model", "qwen2.5:7b")
+        
+        print(f"  🏠 使用本地 Ollama 模型: {local_model}")
+        
+        return ChatOpenAI(
+            model=local_model,
+            temperature=temperature,
+            openai_api_key="ollama",  # Ollama 不需要真实 API key
+            openai_api_base=f"{local_url}/v1",
+        )
+    else:
+        # 在线模式：使用 API
+        api_config = get_api_config()
+        
+        # 如果指定了模型名称就使用，否则使用配置中的第一个模型
+        if model_name is None:
+            chat_models = model_config.get("chat_models", ["gemini-3-pro-preview"])
+            model_name = chat_models[0] if isinstance(chat_models, list) else chat_models
+        
+        return ChatOpenAI(
+            model=model_name,
+            temperature=temperature,
+            openai_api_key=api_config["api_key"],
+            openai_api_base=api_config["base_url"],
+        )
 
 
-def load_vectorstore():
+def load_vectorstore(offline=None):
     """加载已有的向量数据库"""
     db_config = get_database_config()
+    model_config = get_model_config()
     persist_directory = db_config.get("chroma_dir", "./chroma_db")
+    
+    # 检查离线模式
+    if offline is None:
+        offline = model_config.get("offline_mode", False)
     
     if not os.path.exists(persist_directory):
         raise FileNotFoundError(
@@ -70,7 +111,7 @@ def load_vectorstore():
     
     print(f"📂 正在加载向量数据库: {persist_directory}")
     
-    embeddings = get_embeddings()
+    embeddings = get_embeddings(offline=offline)
     
     vectorstore = Chroma(
         persist_directory=persist_directory,
@@ -220,16 +261,27 @@ def save_answer_as_markdown(question, answer, context_docs, output_dir="./answer
 
 def main():
     """主函数 - 交互式问答"""
+    import sys
+    
+    # 检查命令行参数
+    OFFLINE_MODE = '--offline' in sys.argv
+    
     print("="*60)
     print(" 🎓 随机过程 RAG 问答系统")
+    if OFFLINE_MODE:
+        print(" 🏠 离线模式（使用本地 Ollama 模型）")
     print("="*60)
     
     try:
-        vectorstore = load_vectorstore()
+        # 命令行参数优先，否则使用配置文件
+        model_config = get_model_config()
+        offline = OFFLINE_MODE or model_config.get("offline_mode", False)
+        
+        vectorstore = load_vectorstore(offline=offline)
         
         print("🤖 正在初始化大语言模型...")
-        model_config = get_model_config()
-        llm = get_llm(temperature=model_config.get("temperature", 0.3))
+        
+        llm = get_llm(temperature=model_config.get("temperature", 0.3), offline=offline)
         print("✅ LLM 初始化成功")
         
         print("🔗 正在创建 QA 检索链...")

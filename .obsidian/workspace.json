@@ -8,6 +8,20 @@
         "type": "tabs",
         "children": [
           {
+            "id": "1d8574ceb8ee6116",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为"
+            }
+          },
+          {
             "id": "c2d5c13fb95f8113",
             "type": "leaf",
             "state": {
@@ -20,28 +34,27 @@
               "icon": "lucide-file",
               "title": "习题2_4"
             }
-          },
+          }
+        ]
+      },
+      {
+        "id": "fc9f48652c86f756",
+        "type": "tabs",
+        "children": [
           {
             "id": "de9b59721e5d88b2",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+                "file": "answers/20251229_114601_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为"
+              "title": "20251229_114601_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为"
             }
-          }
-        ],
-        "currentTab": 1
-      },
-      {
-        "id": "fc9f48652c86f756",
-        "type": "tabs",
-        "children": [
+          },
           {
             "id": "af3bf3a79ba41e8f",
             "type": "leaf",
@@ -68,8 +81,7 @@
               "title": "回忆版题目"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -233,9 +245,10 @@
   },
   "active": "de9b59721e5d88b2",
   "lastOpenFiles": [
+    "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
+    "answers/20251229_114601_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
     "answers/20251227_225225_指数分布是什么.md",
     "data/回忆版题目.pdf",
-    "answers/20251227_210515_设顾客的到达符合速率为_λ_的泊松过程单个顾客的服务时间为.md",
     "solutions/第3章_题目与解答.md",
     "solutions/习题2_4.md",
     "solutions/例题2_4.md",
@@ -261,7 +274,6 @@
     "solutions/例题0_4.md",
     "solutions/例题0_3.md",
     "solutions/例题0_2.md",
-    "solutions/例题0_1.md",
     "data/SP-10-12.pdf",
     "data/习题答案.pdf",
     "chroma_db/da398916-ccff-4adb-908d-1ed7ef82fc6c/link_lists.bin",

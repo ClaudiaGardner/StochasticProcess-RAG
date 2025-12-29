@@ -154,18 +154,34 @@ def load_pdf_with_pymupdf(pdf_path):
     return documents
 
 
-def get_embeddings():
+def get_embeddings(offline=None):
     """获取 Embedding 模型（支持本地 HuggingFace 或 API）"""
     model_config = get_model_config()
     embedding_model = model_config.get("embedding_model", "local")
     
+    # 检查离线模式
+    if offline is None:
+        offline = model_config.get("offline_mode", False)
+    
     if embedding_model == "local":
-        # 设置 HuggingFace 镜像（解决国内网络问题）
         import os
-        os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+        
+        # 离线模式：完全使用本地缓存，不联网
+        if offline:
+            os.environ['HF_HUB_OFFLINE'] = '1'
+            os.environ['TRANSFORMERS_OFFLINE'] = '1'
+            print("  🏠 离线模式：使用本地缓存的 Embedding 模型")
+        else:
+            # 设置 HuggingFace 镜像（解决国内网络问题）
+            os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
         
         from langchain_huggingface import HuggingFaceEmbeddings
         print("  📦 使用本地 HuggingFace Embedding 模型...")
+        
+        # 自动检测 GPU
+        import torch
+        device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        print(f"  🔧 检测到设备: {device}")
         
         # 尝试多个模型，按顺序回退
         models_to_try = [
@@ -179,14 +195,14 @@ def get_embeddings():
                 print(f"  🔄 尝试加载模型: {model_name}")
                 return HuggingFaceEmbeddings(
                     model_name=model_name,
-                    model_kwargs={'device': 'cpu'},
+                    model_kwargs={'device': device},
                     encode_kwargs={'normalize_embeddings': True}
                 )
             except Exception as e:
                 print(f"  ⚠️ 模型 {model_name} 加载失败: {str(e)[:80]}")
                 continue
         
-        raise RuntimeError("所有 Embedding 模型加载失败，请检查网络连接")
+        raise RuntimeError("所有 Embedding 模型加载失败，请检查本地缓存或网络连接")
     else:
         # 使用 OpenAI 兼容接口
         api_config = get_api_config()
@@ -197,22 +213,44 @@ def get_embeddings():
         )
 
 
-def get_llm(model_name=None):
-    """获取 LLM 实例，支持指定模型名称"""
-    api_config = get_api_config()
+def get_llm(model_name=None, offline=None):
+    """获取 LLM 实例，支持在线 API 和离线本地模型（Ollama）"""
     model_config = get_model_config()
     
-    # 如果指定了模型名称就使用，否则使用配置中的第一个模型
-    if model_name is None:
-        chat_models = model_config.get("chat_models", ["gemini-3-pro-preview"])
-        model_name = chat_models[0] if isinstance(chat_models, list) else chat_models
+    # 如果未指定，从配置读取离线模式
+    if offline is None:
+        offline = model_config.get("offline_mode", False)
     
-    return ChatOpenAI(
-        model=model_name,
-        temperature=model_config.get("temperature", 0.3),
-        openai_api_key=api_config["api_key"],
-        openai_api_base=api_config["base_url"],
-    )
+    if offline:
+        # 离线模式：使用 Ollama 本地模型
+        local_url = model_config.get("local_llm_url", "http://localhost:11434")
+        local_model = model_config.get("local_llm_model", "qwen2.5:7b")
+        
+        print(f"  🏠 使用本地 Ollama 模型: {local_model}")
+        
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(
+            model=local_model,
+            temperature=model_config.get("temperature", 0.3),
+            openai_api_key="ollama",  # Ollama 不需要真实 API key
+            openai_api_base=f"{local_url}/v1",
+        )
+    else:
+        # 在线模式：使用 API
+        api_config = get_api_config()
+        
+        # 如果指定了模型名称就使用，否则使用配置中的第一个模型
+        if model_name is None:
+            chat_models = model_config.get("chat_models", ["gemini-3-pro-preview"])
+            model_name = chat_models[0] if isinstance(chat_models, list) else chat_models
+        
+        from langchain_openai import ChatOpenAI
+        return ChatOpenAI(
+            model=model_name,
+            temperature=model_config.get("temperature", 0.3),
+            openai_api_key=api_config["api_key"],
+            openai_api_base=api_config["base_url"],
+        )
 
 
 def load_and_split_pdf(pdf_path, chunk_size=800, chunk_overlap=150, use_ocr=False):
@@ -556,10 +594,10 @@ $$P(A|B) = \\frac{{P(A \\cap B)}}{{P(B)}}$$
                         return None
 
 
-def create_vectorstore(documents, persist_directory):
+def create_vectorstore(documents, persist_directory, offline=None):
     """创建向量存储"""
     print(f"🧠 正在初始化 Embedding 模型...")
-    embeddings = get_embeddings()
+    embeddings = get_embeddings(offline=offline)
     
     print(f"💾 正在创建向量数据库并持久化到: {persist_directory}")
     vectorstore = Chroma.from_documents(
@@ -578,12 +616,22 @@ def main():
     
     # 检查命令行参数
     USE_OCR = '--ocr' in sys.argv
+    OFFLINE_MODE = '--offline' in sys.argv
+    
     if USE_OCR:
         print("🔬 已启用 OCR 模式（支持数学公式识别）")
+    if OFFLINE_MODE:
+        print("🏠 已启用离线模式（跳过 API 调用，使用现有解答）")
     
     # 从配置读取参数
     db_config = get_database_config()
     ing_config = get_ingestion_config()
+    model_config = get_model_config()
+    
+    # 如果配置文件也设置了离线模式
+    if model_config.get("offline_mode", False):
+        OFFLINE_MODE = True
+        print("🏠 配置文件设置为离线模式")
     
     PDF_PATH = ing_config.get("pdf_path", "data/SP-10-12.pdf")
     CHROMA_DIR = db_config.get("chroma_dir", "./chroma_db")
@@ -717,7 +765,18 @@ def main():
             print(f"  ... 还有 {len(all_dedup) - 20} 个题目 (完整列表见 {index_file})")
         
         # 步骤 3: 按章节组织题目并使用 API 解答
-        llm = get_llm()
+        # 离线模式下，仅使用现有解答，跳过需要 API 的新解答
+        llm = None
+        if not OFFLINE_MODE:
+            llm = get_llm(offline=False)
+        else:
+            # 离线模式：尝试使用本地 Ollama（如果配置了）
+            try:
+                llm = get_llm(offline=True)
+            except Exception as e:
+                print(f"  ⚠️ 本地模型不可用，将仅使用已有解答: {e}")
+                llm = None
+        
         solved_docs = []
         
         # 按章节分组题目
@@ -828,6 +887,12 @@ def main():
                 # 需要调用 API 解答
                 solution = None
                 if need_resolve:
+                    # 离线模式下，如果 LLM 不可用，跳过新解答
+                    if llm is None:
+                        print(f"  [{i}/{len(problems_to_solve)}] ⏭️ 跳过 {prob['id']} (离线模式，无已有解答)")
+                        skipped_count += 1
+                        continue
+                    
                     if not os.path.exists(solution_file):
                         print(f"  [{i}/{len(problems_to_solve)}] 🆕 正在解答 {prob['id']}...")
                     
@@ -910,6 +975,11 @@ def main():
                         print(f"    ⚠️ 读取现有文件失败: {str(e)}")
                     continue
                 
+                # 离线模式下，如果 LLM 不可用，跳过新知识生成
+                if llm is None:
+                    print(f"    ⏭️ 跳过 (离线模式，无法生成新知识)")
+                    continue
+                
                 knowledge = generate_supplementary_knowledge(llm, topic)
                 if knowledge:
                     # 保存到文件
@@ -928,7 +998,7 @@ def main():
         all_documents = splits + solved_docs
         print(f"✅ 共 {len(all_documents)} 个文档片段 (原文: {len(splits)}, 解答+知识: {len(solved_docs)})")
         
-        vectorstore = create_vectorstore(all_documents, CHROMA_DIR)
+        vectorstore = create_vectorstore(all_documents, CHROMA_DIR, offline=OFFLINE_MODE)
         
         # 测试检索
         print("\n🔍 测试检索功能...")

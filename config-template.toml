@@ -12,6 +12,16 @@ chat_models = ["claude-sonnet-4-5-20250929", "claude-opus-4-5-20251101-thinking"
 embedding_model = "local"  # 使用本地 HuggingFace embedding 模型
 temperature = 0.3
 
+# ===== 离线模式配置 =====
+offline_mode = false  # 设为 true 启用离线模式（完全不联网）
+local_llm_url = "http://localhost:11434"  # Ollama 服务地址
+# 推荐模型（按显存需求从小到大）：
+#   - qwen2.5:1.5b  (~1GB, 适合 2-4GB 显存)
+#   - qwen2.5:3b    (~2GB, 适合 4-6GB 显存)
+#   - phi3:mini     (~2.5GB, 适合 4-6GB 显存)
+#   - qwen2.5:7b    (~5GB, 需要 6GB+ 显存)
+local_llm_model = "qwen2.5:3b"  # 推荐 4GB 显存使用 3b 模型
+
 [database]
 # 向量数据库配置
 chroma_dir = "./chroma_db"

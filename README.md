@@ -19,25 +19,41 @@ English | [简体中文](README_CN.md)
 
 ### 环境要求
 
-- Python 3.8+
-- 推荐使用虚拟环境
+- Python 3.11+ (推荐)
+- NVIDIA GPU (可选，用于加速 embedding)
 
 ### 安装步骤
 
-1. **克隆项目**
+1. **克隆项目并创建 Conda 环境**
 
 ```bash
 git clone https://github.com/ClaudiaGardner/StochasticProcess-RAG.git
 cd StochasticProcess-RAG
+
+# 创建 Conda 环境（推荐，避免依赖冲突）
+conda create -n stochastic-rag python=3.11 -y
+conda activate stochastic-rag
 ```
 
-2. **安装依赖**
+2. **安装 PyTorch（如有 GPU）**
+
+```bash
+# GPU 版本（CUDA 11.8，加速 5-10 倍）
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 验证 GPU
+python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}')"
+```
+
+> 💡 无 GPU 可跳过此步，系统会自动使用 CPU
+
+3. **安装依赖**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **配置 API**
+4. **配置 API**
 
 复制配置模板并填写你的 API 信息：
 
@@ -71,11 +87,11 @@ max_problems_to_solve = 0  # 0 表示解答所有题目
 
 > ⚠️ **注意**：`config.toml` 包含敏感信息，已被 `.gitignore` 排除，不会上传到 GitHub
 
-4. **准备数据**
+5. **准备数据**
 
 将你的随机过程教材 PDF 放入 `data/` 目录，并在 `config.toml` 中指定路径。
 
-5. **构建知识库**
+6. **构建知识库**
 
 ```bash
 # 基础模式（使用 PyMuPDF）
@@ -92,7 +108,7 @@ python ingest.py --ocr
 - 构建向量数据库
 - 生成补充知识点
 
-6. **开始问答**
+7. **开始问答**
 
 ```bash
 python main.py
@@ -167,6 +183,32 @@ pip install pix2text
 # 使用 OCR 模式构建知识库
 python ingest.py --ocr
 ```
+
+### 🏠 离线模式 (Offline Mode)
+
+支持完全离线运行，无需云端 API：
+
+**方式一：命令行参数**
+```bash
+# 离线构建知识库（使用已有解答）
+python ingest.py --offline
+
+# 离线问答（使用本地 Ollama）
+python main.py --offline
+```
+
+**方式二：配置文件**
+```toml
+[model]
+offline_mode = true
+local_llm_url = "http://localhost:11434"
+local_llm_model = "qwen2.5:7b"
+```
+
+**前提条件**：
+1. 安装 [Ollama](https://ollama.ai/)：`ollama pull qwen2.5:7b`
+2. 启动服务：`ollama serve`
+
 
 ### 自定义检索参数
 
