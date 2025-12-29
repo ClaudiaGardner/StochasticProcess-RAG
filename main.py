@@ -156,9 +156,10 @@ def create_qa_chain(vectorstore, llm):
 
 **回答要求**：
 1. 严格基于背景知识中的定义和定理进行回答
-2. **所有数学公式必须使用 LaTeX 格式**：
-   - 行内公式使用 `$...$`，如 $P(X=k)$
-   - 行间公式使用 `$$...$$`
+2. **数学公式格式要求（非常重要）**：
+   - 行内公式**必须**使用美元符号格式：`$公式$`，例如 $P(X=k)$
+   - 行间公式**必须**使用双美元符号格式：`$$公式$$`
+   - **禁止**使用 \\( \\) 或 \\[ \\] 格式！
 3. 使用标准概率论记号（$P$, $E$, $\\operatorname{{Var}}$, $\\sigma$ 等）
 4. 如果是例题或习题，请给出详细的解题步骤
 5. 如果背景知识不足以完整回答，请说明并提供你的专业见解
@@ -177,6 +178,9 @@ def create_qa_chain(vectorstore, llm):
             else:
                 answer = response.content
             
+            # 后处理：转换 LaTeX 公式格式，确保 Markdown 兼容
+            answer = convert_latex_format(answer)
+            
             return {
                 "input": question,
                 "context": docs,
@@ -186,8 +190,28 @@ def create_qa_chain(vectorstore, llm):
     return SimpleQAChain(retriever, llm)
 
 
-def save_answer_as_markdown(question, answer, context_docs, output_dir="./answers"):
-    """将回答保存为格式化的Markdown文档"""
+def convert_latex_format(text):
+    """
+    将 LaTeX 公式格式从 \\(...\\) 和 \\[...\\] 转换为 $...$ 和 $$...$$ 格式
+    这样可以确保在标准 Markdown 渲染器中正确显示数学公式
+    """
+    import re
+    
+    # 转换行间公式：\[...\] -> $$...$$
+    text = re.sub(r'\\\[(.+?)\\\]', r'$$\1$$', text, flags=re.DOTALL)
+    
+    # 转换行内公式：\(...\) -> $...$
+    text = re.sub(r'\\\((.+?)\\\)', r'$\1$', text, flags=re.DOTALL)
+    
+    return text
+
+
+def save_answer_as_markdown(question, answer, context_docs, output_dir="./answers", mode="rag"):
+    """将回答保存为格式化的Markdown文档
+    
+    Args:
+        mode: "rag" - AI生成回答, "search" - 纯检索结果
+    """
     # 创建输出目录
     os.makedirs(output_dir, exist_ok=True)
     
@@ -195,16 +219,24 @@ def save_answer_as_markdown(question, answer, context_docs, output_dir="./answer
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe_question = "".join(c for c in question[:30] if c.isalnum() or c in (' ', '-', '_')).rstrip()
     safe_question = safe_question.replace(' ', '_')
-    filename = f"{timestamp}_{safe_question}.md"
+    prefix = "search_" if mode == "search" else ""
+    filename = f"{prefix}{timestamp}_{safe_question}.md"
     filepath = os.path.join(output_dir, filename)
     
+    # 根据模式选择标题
+    if mode == "search":
+        title = "# 随机过程 - 检索结果\n"
+        section_title = "## 📚 检索到的相关内容"
+    else:
+        title = "# 随机过程 RAG 问答系统 - 回答记录\n"
+        section_title = "## 🤖 AI 回答"
+    
     # 构建Markdown内容
-    markdown_content = f"""# 随机过程 RAG 问答系统 - 回答记录
-
-**提问时间**: {datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")}
+    markdown_content = f"""{title}
+**查询时间**: {datetime.now().strftime("%Y年%m月%d日 %H:%M:%S")}
 **问题**: {question}
 
-## 🤖 AI 回答
+{section_title}
 
 {answer}
 
@@ -265,11 +297,14 @@ def main():
     
     # 检查命令行参数
     OFFLINE_MODE = '--offline' in sys.argv
+    SEARCH_ONLY = '--search' in sys.argv  # 纯检索模式：只返回原文，不使用 LLM
     
     print("="*60)
     print(" 🎓 随机过程 RAG 问答系统")
     if OFFLINE_MODE:
         print(" 🏠 离线模式（使用本地 Ollama 模型）")
+    if SEARCH_ONLY:
+        print(" 🔍 纯检索模式（只返回教材原文，不使用 LLM）")
     print("="*60)
     
     try:
@@ -278,17 +313,25 @@ def main():
         offline = OFFLINE_MODE or model_config.get("offline_mode", False)
         
         vectorstore = load_vectorstore(offline=offline)
+        retrieval_config = get_retrieval_config()
+        top_k = retrieval_config.get("top_k", 5)
         
-        print("🤖 正在初始化大语言模型...")
-        
-        llm = get_llm(temperature=model_config.get("temperature", 0.3), offline=offline)
-        print("✅ LLM 初始化成功")
-        
-        print("🔗 正在创建 QA 检索链...")
-        qa_chain = create_qa_chain(vectorstore, llm)
-        print("✅ QA 链创建成功\n")
+        # 纯检索模式：不需要 LLM
+        if not SEARCH_ONLY:
+            print("🤖 正在初始化大语言模型...")
+            llm = get_llm(temperature=model_config.get("temperature", 0.3), offline=offline)
+            print("✅ LLM 初始化成功")
+            
+            print("🔗 正在创建 QA 检索链...")
+            qa_chain = create_qa_chain(vectorstore, llm)
+            print("✅ QA 链创建成功\n")
+        else:
+            qa_chain = None
+            print("✅ 纯检索模式就绪\n")
         
         print("💬 开始问答（输入 'quit' 或 'exit' 退出）")
+        if SEARCH_ONLY:
+            print("📖 纯检索模式：直接返回教材原文和已有解答")
         print("💡 示例问题：")
         print("   - 什么是马尔可夫链？")
         print("   - 泊松过程有什么性质？")
@@ -307,46 +350,96 @@ def main():
             
             try:
                 print("\n🔍 正在检索相关知识...")
-                result = qa_chain.invoke({"input": question})
                 
-                print("\n" + "="*60)
-                print("🤖 回答:")
-                print("-"*60)
-                print(result['answer'])
-                print("="*60)
-                
-                # 自动保存回答为Markdown文件
-                try:
-                    filepath = save_answer_as_markdown(
-                        question=result['input'],
-                        answer=result['answer'],
-                        context_docs=result['context']
-                    )
-                    print(f"💾 回答已自动保存到: {filepath}")
-                    print("� 可以使用 Markdown 查看器打开文件，数学公式将正确显示")
-                except Exception as e:
-                    print(f"❌ 保存失败: {str(e)}")
-                
-                if result.get('context'):
-                    print(f"\n📚 参考来源 ({len(result['context'])} 个):")
-                    for i, doc in enumerate(result['context'][:3], 1):
+                # 纯检索模式：只返回检索结果，不使用 LLM
+                if SEARCH_ONLY:
+                    docs = vectorstore.similarity_search(question, k=top_k)
+                    
+                    print("\n" + "="*60)
+                    print(f"📚 找到 {len(docs)} 个相关文档:")
+                    print("="*60)
+                    
+                    # 构建结果文本
+                    result_text = ""
+                    for i, doc in enumerate(docs, 1):
                         doc_type = doc.metadata.get('type', 'original')
                         type_label = {
-                            'original': '📄 原文',
-                            'solved_problem': '✅ 已解答例题',
+                            'original': '📄 教材原文',
+                            'solved_problem': '✅ 已解答例题/习题',
                             'supplementary_knowledge': '📖 补充知识'
                         }.get(doc_type, '📄')
                         
                         extra_info = ""
                         if 'problem_id' in doc.metadata:
-                            extra_info = f" - 例题 {doc.metadata['problem_id']}"
+                            extra_info = f" - {doc.metadata['problem_id']}"
                         elif 'topic' in doc.metadata:
                             extra_info = f" - {doc.metadata['topic']}"
                         
-                        print(f"\n[{i}] {type_label}{extra_info}")
-                        print("-"*40)
-                        content = doc.page_content[:150]
-                        print(content + "..." if len(doc.page_content) > 150 else content)
+                        print(f"\n{'='*60}")
+                        print(f"[{i}] {type_label}{extra_info}")
+                        print("-"*60)
+                        # 显示完整内容
+                        print(doc.page_content)
+                        
+                        # 累积到结果文本
+                        result_text += f"\n## [{i}] {type_label}{extra_info}\n\n"
+                        result_text += doc.page_content + "\n\n---\n"
+                    
+                    print("\n" + "="*60)
+                    
+                    # 保存到 Markdown 文件
+                    try:
+                        filepath = save_answer_as_markdown(
+                            question=question,
+                            answer=result_text,
+                            context_docs=docs,
+                            mode="search"  # 标记为检索模式
+                        )
+                        print(f"💾 检索结果已保存到: {filepath}")
+                    except Exception as e:
+                        print(f"❌ 保存失败: {str(e)}")
+                else:
+                    # 正常 RAG 模式
+                    result = qa_chain.invoke({"input": question})
+                    
+                    print("\n" + "="*60)
+                    print("🤖 回答:")
+                    print("-"*60)
+                    print(result['answer'])
+                    print("="*60)
+                    
+                    # 自动保存回答为Markdown文件
+                    try:
+                        filepath = save_answer_as_markdown(
+                            question=result['input'],
+                            answer=result['answer'],
+                            context_docs=result['context']
+                        )
+                        print(f"💾 回答已自动保存到: {filepath}")
+                        print("📄 可以使用 Markdown 查看器打开文件，数学公式将正确显示")
+                    except Exception as e:
+                        print(f"❌ 保存失败: {str(e)}")
+                    
+                    if result.get('context'):
+                        print(f"\n📚 参考来源 ({len(result['context'])} 个):")
+                        for i, doc in enumerate(result['context'][:3], 1):
+                            doc_type = doc.metadata.get('type', 'original')
+                            type_label = {
+                                'original': '📄 原文',
+                                'solved_problem': '✅ 已解答例题',
+                                'supplementary_knowledge': '📖 补充知识'
+                            }.get(doc_type, '📄')
+                            
+                            extra_info = ""
+                            if 'problem_id' in doc.metadata:
+                                extra_info = f" - 例题 {doc.metadata['problem_id']}"
+                            elif 'topic' in doc.metadata:
+                                extra_info = f" - {doc.metadata['topic']}"
+                            
+                            print(f"\n[{i}] {type_label}{extra_info}")
+                            print("-"*40)
+                            content = doc.page_content[:150]
+                            print(content + "..." if len(doc.page_content) > 150 else content)
                 
                 print("\n")
                 
